@@ -29,8 +29,8 @@ app.use(express.json());
 // Configure CORS for frontend communication
 const allowedOrigins = [
   process.env.FRONTEND_URL?.trim() ||
-    "https://consumer-delta.vercel.app",
-    "https://admin-kappa-snowy.vercel.app",
+    "https://consumer-new.vercel.app",
+    "https://admin-new-black.vercel.app",
     "http://localhost:5173",
     "http://localhost:5174",
 ];
