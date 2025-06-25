@@ -23,26 +23,7 @@ connectDB();
 // Initialize the Express app
 const app = express();
 
-// ⏰ Market open/close time check
-function isMarketOpen() {
-  const now = new Date();
-  const hour = now.getHours(); // 0 - 23
-
-  // Market is open from 7 AM to 11:59 PM, closed from 12 AM to 6:59 AM
-  return hour >= 7 && hour < 24;
-}
-
-// ❌ Block API access if market is closed
-app.use((req, res, next) => {
-  if (!isMarketOpen()) {
-    return res.status(403).json({
-      message: "⏰ Market is closed. Please come back after 7:00 AM.",
-    });
-  }
-  next();
-});
-
-// Middleware for parsing JSON
+// ✅ Middleware for parsing JSON
 app.use(express.json());
 
 // ✅ Configure CORS for frontend communication
@@ -67,6 +48,24 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+
+
+// ✅⏰ Market open/close time check
+function isMarketOpen() {
+  const now = new Date();
+  const hour = now.getHours(); // 0 - 23
+  return hour >= 7 && hour < 24; // Market open from 7 AM to 11:59 PM
+}
+
+// ✅ ✅ ✅ Only block the MARKET route, not all routes
+app.use("/api/markets", (req, res, next) => {
+  if (!isMarketOpen()) {
+    return res.status(403).json({
+      message: "⏰ Market is closed. Please come back after 7:00 AM.",
+    });
+  }
+  next();
+});
 
 // 🌐 Mount API routes
 app.use("/api/auth", authRoutes);           // Auth routes
