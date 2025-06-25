@@ -1,16 +1,18 @@
 import mongoose from 'mongoose';
 
+const adminContactSchema = new mongoose.Schema({
+  name: { type: String },
+  email: { type: String },
+  phone: { type: String },
+  address: { type: String },
+}, { _id: false });
+
 const platformSettingsSchema = new mongoose.Schema({
-  qrCodeUrl: { type: String, required: true },
-  upiId: { type: String, required: true },
-  bannerImageUrl: { type: String, required: true },
-  whatsAppNumber: { type: String, required: true }, // New field for WhatsApp number
-  adminContact: {
-    name: { type: String, required: true },
-    email: { type: String, required: true },
-    phone: { type: String, required: true },
-    address: { type: String, required: true },
-  }
+  qrCodeUrl: { type: String },
+  upiId: { type: String },
+  bannerImageUrl: { type: String },
+  whatsAppNumber: { type: String },
+  adminContact: adminContactSchema
 }, { timestamps: true });
 
 export default mongoose.model('PlatformSettings', platformSettingsSchema);
