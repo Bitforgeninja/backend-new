@@ -13,10 +13,11 @@ dayjs.extend(timezone);
 export function scheduleMarketTasks() {
   console.log('🕐 Initializing market betting scheduler...');
 
+  // 📍 Runs every minute to check market status like open/close
   cron.schedule('* * * * *', async () => {
     try {
-      const now = dayjs(); // Server time
-      const nowIST = dayjs().tz('Asia/Kolkata'); // Convert to IST
+      const now = dayjs();
+      const nowIST = now.tz('Asia/Kolkata');
       const todayDateStr = nowIST.format('YYYY-MM-DD');
 
       console.log(`\n📅 [${nowIST.format('YYYY-MM-DD HH:mm:ss')} IST] Running market scheduler...`);
@@ -74,4 +75,19 @@ export function scheduleMarketTasks() {
   });
 
   console.log('✅ Market scheduler running every minute...');
+
+  // 🔄 RESULT RESET TASK – runs every night at 12:00 AM IST to reset results
+  cron.schedule('30 18 * * *', async () => {
+    const nowIST = dayjs().tz('Asia/Kolkata');
+    console.log(`\n🕛 [${nowIST.format('YYYY-MM-DD HH:mm:ss')} IST] Running daily result reset...`);
+
+    try {
+      await Market.updateMany({}, { $set: { result: "xxx-xx-xxx" } });
+      console.log('✅ All market results reset to default (xxx-xx-xxx)');
+    } catch (error) {
+      console.error('❌ Error resetting market results:', error);
+    }
+  });
+
+  console.log('✅ Result reset scheduler running every night at 12:00 AM IST...');
 }
