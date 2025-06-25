@@ -50,14 +50,20 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 
-// ✅⏰ Market open/close time check
-function isMarketOpen() {
+// ✅⏰ Market open/close time check (India Standard Time - IST)
+function getISTHour() {
   const now = new Date();
-  const hour = now.getHours(); // 0 - 23
-  return hour >= 7 && hour < 24; // Market open from 7 AM to 11:59 PM
+  const utcTime = now.getTime() + now.getTimezoneOffset() * 60000; // Convert to UTC
+  const istTime = new Date(utcTime + 5.5 * 60 * 60000); // Add 5.5 hours for IST
+  return istTime.getHours(); // IST hour
 }
 
-// ✅ ✅ ✅ Only block the MARKET route, not all routes
+function isMarketOpen() {
+  const hour = getISTHour();
+  return hour >= 7 && hour < 24; // Market open from 7 AM to 11:59 PM IST
+}
+
+// ✅ ✅ ✅ Only block the /api/markets route if market is closed
 app.use("/api/markets", (req, res, next) => {
   if (!isMarketOpen()) {
     return res.status(403).json({
