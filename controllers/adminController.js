@@ -213,7 +213,7 @@ export const updatePlatformSettings = async (req, res) => {
   }
 };
 
-// ✅ NEW: Add user function (was missing before)
+// ✅ Add user — used in /users/add
 export const addUser = async (req, res) => {
   const { name, email, password } = req.body;
 
@@ -240,5 +240,23 @@ export const addUser = async (req, res) => {
     res.status(201).json({ message: 'User added successfully.', user });
   } catch (error) {
     res.status(500).json({ message: 'Server error while adding user.' });
+  }
+};
+
+// ✅ NEW: Delete bet — fixes the Render deploy error
+export const deleteBet = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const deletedBet = await Bet.findByIdAndDelete(id);
+
+    if (!deletedBet) {
+      return res.status(404).json({ message: 'Bet not found.' });
+    }
+
+    res.status(200).json({ message: 'Bet deleted successfully.' });
+  } catch (error) {
+    console.error('❌ Error deleting bet:', error.message);
+    res.status(500).json({ message: 'Server error while deleting bet.' });
   }
 };
