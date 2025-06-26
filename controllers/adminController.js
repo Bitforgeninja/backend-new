@@ -114,7 +114,6 @@ export const declareResult = async (req, res) => {
   }
 };
 
-// ✅ NEW: Reset market result to default
 export const resetMarketResult = async (req, res) => {
   const { marketId } = req.body;
 
@@ -181,21 +180,23 @@ export const updatePlatformSettings = async (req, res) => {
     }
 
     if (req.files && req.files.qrCode) {
-      const uploadQR = await cloudinary.v2.uploader.upload_stream({ resource_type: 'image' },
-        function (error, result) {
-          if (result) return result.url;
-          else console.error('QR upload error:', error);
-        })(req.files.qrCode[0].buffer);
+      const uploadQR = await new Promise((resolve, reject) => {
+        cloudinary.v2.uploader.upload_stream({ resource_type: 'image' }, (error, result) => {
+          if (error) reject(error);
+          else resolve(result.url);
+        }).end(req.files.qrCode[0].buffer);
+      });
 
       if (uploadQR) updateFields.qrCodeUrl = uploadQR;
     }
 
     if (req.files && req.files.bannerImage) {
-      const uploadBanner = await cloudinary.v2.uploader.upload_stream({ resource_type: 'image' },
-        function (error, result) {
-          if (result) return result.url;
-          else console.error('Banner upload error:', error);
-        })(req.files.bannerImage[0].buffer);
+      const uploadBanner = await new Promise((resolve, reject) => {
+        cloudinary.v2.uploader.upload_stream({ resource_type: 'image' }, (error, result) => {
+          if (error) reject(error);
+          else resolve(result.url);
+        }).end(req.files.bannerImage[0].buffer);
+      });
 
       if (uploadBanner) updateFields.bannerImageUrl = uploadBanner;
     }
@@ -209,5 +210,35 @@ export const updatePlatformSettings = async (req, res) => {
     res.status(200).json({ message: 'Platform settings updated.', settings });
   } catch (error) {
     res.status(500).json({ message: 'Error while updating platform settings.' });
+  }
+};
+
+// ✅ NEW: Add user function (was missing before)
+export const addUser = async (req, res) => {
+  const { name, email, password } = req.body;
+
+  if (!name || !email || !password) {
+    return res.status(400).json({ message: 'Name, email, and password are required.' });
+  }
+
+  try {
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: 'User with this email already exists.' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = new User({
+      name,
+      email,
+      password: hashedPassword,
+    });
+
+    await user.save();
+
+    res.status(201).json({ message: 'User added successfully.', user });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error while adding user.' });
   }
 };
