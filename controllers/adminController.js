@@ -378,3 +378,45 @@ export const updatePlatformSettings = async (req, res) => {
     res.status(500).json({ message: 'Error updating platform settings.' });
   }
 };
+
+export const publishOpenResults = async (req, res) => {
+  const { marketId, openResult } = req.body;
+
+  if (!marketId || !openResult) {
+    return res.status(400).json({ message: 'Market ID and Open Result are required.' });
+  }
+
+  try {
+    const market = await Market.findOne({ marketId });
+    if (!market) return res.status(404).json({ message: 'Market not found.' });
+
+    const openDigits = openResult.split('').map(Number);
+    const openSingleDigit = openDigits.reduce((sum, digit) => sum + digit, 0) % 10;
+    const jodiResult = `${openSingleDigit}${market.results?.closeSingleDigit || '0'}`;
+
+    const updatedMarket = await Market.findOneAndUpdate(
+      { marketId },
+      {
+        $set: {
+          results: {
+            ...market.results,
+            openNumber: openResult,
+            openSingleDigit,
+            jodiResult,
+            openSinglePanna: openResult,
+          },
+          isBettingOpen: true
+        }
+      },
+      { new: true }
+    );
+
+    res.status(200).json({
+      message: 'Open result published successfully',
+      market: updatedMarket
+    });
+  } catch (error) {
+    console.error('❌ Error publishing open result:', error.message);
+    res.status(500).json({ message: 'Server error while updating open result' });
+  }
+};
