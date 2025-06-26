@@ -13,21 +13,18 @@ import bcrypt from 'bcryptjs';
 
 dotenv.config();
 
-// ✅ Cloudinary setup
 cloudinary.v2.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// ✅ Multer setup
 const storage = multer.memoryStorage();
 export const upload = multer({ storage }).fields([
   { name: 'qrCode', maxCount: 1 },
   { name: 'bannerImage', maxCount: 1 },
 ]);
 
-// ✅ Get All Users
 export const getUsers = async (req, res) => {
   try {
     const users = await User.find().select('-password');
@@ -37,53 +34,135 @@ export const getUsers = async (req, res) => {
   }
 };
 
-// ✅ Add User
 export const addUser = async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, phoneNumber, walletBalance } = req.body;
 
-  if (!name || !email || !password) {
-    return res.status(400).json({ message: 'Name, email, and password are required.' });
+  if (!name || !email || !password || !phoneNumber) {
+    return res.status(400).json({ message: "All fields are required" });
   }
 
   try {
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({ message: 'User already exists.' });
+      return res.status(400).json({ message: "User already exists" });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
     const newUser = new User({
       name,
       email,
       password: hashedPassword,
+      phoneNumber,
+      walletBalance: walletBalance || 0,
     });
 
     await newUser.save();
-    res.status(201).json({ message: 'User added successfully.', user: newUser });
+
+    res.status(201).json({
+      message: "User added successfully",
+      user: {
+        id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+        phoneNumber: newUser.phoneNumber,
+        walletBalance: newUser.walletBalance,
+        createdAt: newUser.createdAt,
+      },
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Server error while adding user.' });
+    res.status(500).json({ message: "Server error while adding user" });
   }
 };
 
-// ✅ Delete User
 export const deleteUser = async (req, res) => {
   const { userId } = req.params;
 
   try {
     const deletedUser = await User.findByIdAndDelete(userId);
+    if (!deletedUser) return res.status(404).json({ message: 'User not found' });
 
-    if (!deletedUser) {
-      return res.status(404).json({ message: 'User not found.' });
-    }
-
-    res.status(200).json({ message: 'User deleted successfully.', user: deletedUser });
+    res.status(200).json({ message: 'User deleted successfully', user: deletedUser });
   } catch (error) {
-    res.status(500).json({ message: 'Server error while deleting user.' });
+    res.status(500).json({ message: 'Server error while deleting user' });
   }
 };
 
-// ✅ Add Market
+export const editBet = async (req, res) => {
+  const { id } = req.params;
+  const { marketName, gameName, number, amount, winningRatio, status } = req.body;
+
+  if (!marketName || !gameName || number === undefined || !amount || !winningRatio || !status) {
+    return res.status(400).json({ message: 'All fields are required for editing a bet.' });
+  }
+
+  try {
+    const updatedBet = await Bet.findByIdAndUpdate(
+      id,
+      { marketName, gameName, number, amount, winningRatio, status },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedBet) return res.status(404).json({ message: 'Bet not found' });
+
+    res.status(200).json({ message: 'Bet updated successfully', bet: updatedBet });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error while updating bet' });
+  }
+};
+
+export const getAllBets = async (req, res) => {
+  try {
+    const bets = await Bet.find().populate('user', 'name email').sort({ createdAt: -1 });
+    if (!bets.length) return res.status(404).json({ message: 'No bets found' });
+
+    res.status(200).json({ message: 'Bets fetched successfully', bets });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error while fetching bets' });
+  }
+};
+
+export const deleteBet = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const deletedBet = await Bet.findByIdAndDelete(id);
+    if (!deletedBet) return res.status(404).json({ message: 'Bet not found' });
+
+    res.status(200).json({ message: 'Bet deleted successfully', bet: deletedBet });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error while deleting bet' });
+  }
+};
+
+export const getAdmins = async (req, res) => {
+  try {
+    const admins = await Admin.find().select('-password');
+    if (!admins.length) return res.status(404).json({ message: 'No admins found' });
+
+    res.status(200).json({ message: 'Admins fetched successfully', admins });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error while fetching admins' });
+  }
+};
+
+export const getAllTransactions = async (req, res) => {
+  try {
+    const transactions = await Transaction.find()
+      .populate('user', 'name email')
+      .sort({ createdAt: -1 });
+
+    if (!transactions.length) {
+      return res.status(404).json({ message: 'No transactions found' });
+    }
+
+    res.status(200).json({ message: 'Transactions fetched successfully', transactions });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error while fetching transactions' });
+  }
+};
+
 export const addMarket = async (req, res) => {
   const { name, openTime, closeTime, isBettingOpen } = req.body;
 
@@ -113,88 +192,25 @@ export const addMarket = async (req, res) => {
   }
 };
 
-// ✅ Declare Result
-export const declareResult = async (req, res) => {
-  const { marketId, openResult, closeResult } = req.body;
-
-  if (!marketId || !openResult || !closeResult) {
-    return res.status(400).json({ message: 'Market ID, Open Result, and Close Result are required.' });
-  }
+export const editMarket = async (req, res) => {
+  const { marketId } = req.params;
+  const { name, openTime, closeTime, isBettingOpen } = req.body;
 
   try {
-    const market = await Market.findOne({ marketId });
-    if (!market) return res.status(404).json({ message: 'Market not found.' });
-
-    const openDigits = openResult.split('').map(Number);
-    const closeDigits = closeResult.split('').map(Number);
-
-    const openSingleDigit = openDigits.reduce((sum, d) => sum + d, 0) % 10;
-    const closeSingleDigit = closeDigits.reduce((sum, d) => sum + d, 0) % 10;
-    const jodiResult = `${openSingleDigit}${closeSingleDigit}`;
-
     const updatedMarket = await Market.findOneAndUpdate(
       { marketId },
-      {
-        results: {
-          openNumber: openResult,
-          closeNumber: closeResult,
-          openSingleDigit,
-          closeSingleDigit,
-          jodiResult,
-          openSinglePanna: openResult,
-          closeSinglePanna: closeResult,
-        },
-        isBettingOpen: false,
-      },
-      { new: true }
+      { name, openTime, closeTime, isBettingOpen },
+      { new: true, runValidators: true }
     );
 
-    try {
-      const resultDate = req.body.date ? new Date(req.body.date) : new Date();
-      storeMarketResult(market, resultDate, openResult, closeResult);
-    } catch (err) {
-      console.error("❌ Failed to store result:", err.message);
-    }
+    if (!updatedMarket) return res.status(404).json({ message: 'Market not found' });
 
-    res.status(200).json({ message: 'Results declared successfully', market: updatedMarket });
+    res.status(200).json({ message: 'Market updated successfully', market: updatedMarket });
   } catch (error) {
-    res.status(500).json({ message: 'Server error while declaring result.' });
+    res.status(500).json({ message: 'Server error while updating market' });
   }
 };
 
-// ✅ Reset Market Result
-export const resetMarketResult = async (req, res) => {
-  const { marketId } = req.body;
-
-  if (!marketId) return res.status(400).json({ message: 'Market ID is required.' });
-
-  try {
-    const market = await Market.findOne({ marketId });
-    if (!market) return res.status(404).json({ message: 'Market not found.' });
-
-    const resetFields = {
-      openNumber: 'xxx',
-      closeNumber: 'xxx',
-      openSingleDigit: 'x',
-      closeSingleDigit: 'x',
-      jodiResult: 'xx',
-      openSinglePanna: 'xxx',
-      closeSinglePanna: 'xxx',
-    };
-
-    const updatedMarket = await Market.findOneAndUpdate(
-      { marketId },
-      { results: resetFields },
-      { new: true }
-    );
-
-    res.status(200).json({ message: 'Market result reset to default.', market: updatedMarket });
-  } catch (error) {
-    res.status(500).json({ message: 'Server error while resetting result.' });
-  }
-};
-
-// ✅ Delete Market
 export const deleteMarket = async (req, res) => {
   const { marketId } = req.params;
 
@@ -205,60 +221,61 @@ export const deleteMarket = async (req, res) => {
       return res.status(404).json({ message: 'Market not found.' });
     }
 
-    res.status(200).json({ message: 'Market deleted successfully.', market: deletedMarket });
+    res.status(200).json({
+      message: 'Market deleted successfully',
+      market: deletedMarket,
+    });
   } catch (error) {
     res.status(500).json({ message: 'Server error while deleting market.' });
   }
 };
 
-// ✅ Delete Bet
-export const deleteBet = async (req, res) => {
-  const { id } = req.params;
-
+export const getAllWinningRatios = async (req, res) => {
   try {
-    const deletedBet = await Bet.findByIdAndDelete(id);
-
-    if (!deletedBet) {
-      return res.status(404).json({ message: 'Bet not found.' });
-    }
-
-    res.status(200).json({ message: 'Bet deleted successfully.', bet: deletedBet });
+    const winningRatios = await WinningRatio.find();
+    res.status(200).json({ winningRatios });
   } catch (error) {
-    res.status(500).json({ message: 'Server error while deleting bet.' });
+    res.status(500).json({ message: 'Server error while fetching winning ratios' });
   }
 };
 
-// ✅ Edit Bet (NEWLY ADDED)
-export const editBet = async (req, res) => {
+export const updateWinningRatio = async (req, res) => {
   const { id } = req.params;
-  const updates = req.body;
+  const { ratio } = req.body;
+
+  if (!ratio || ratio < 1) {
+    return res.status(400).json({ message: 'Invalid ratio value' });
+  }
 
   try {
-    const updatedBet = await Bet.findByIdAndUpdate(id, updates, { new: true });
+    const updatedRatio = await WinningRatio.findByIdAndUpdate(
+      id,
+      { ratio },
+      { new: true, runValidators: true }
+    );
 
-    if (!updatedBet) {
-      return res.status(404).json({ message: 'Bet not found.' });
+    if (!updatedRatio) {
+      return res.status(404).json({ message: 'Winning ratio not found' });
     }
 
-    res.status(200).json({ message: 'Bet updated successfully.', bet: updatedBet });
+    res.status(200).json({ message: 'Winning ratio updated successfully', winningRatio: updatedRatio });
   } catch (error) {
-    res.status(500).json({ message: 'Server error while updating bet.' });
+    res.status(500).json({ message: 'Server error while updating winning ratio' });
   }
 };
 
-// ✅ Platform Settings: Get
 export const getPlatformSettings = async (req, res) => {
   try {
     const settings = await PlatformSettings.findOne();
-    if (!settings) return res.status(404).json({ message: 'Platform settings not found.' });
-
+    if (!settings) {
+      return res.status(404).json({ message: 'Platform settings not found.' });
+    }
     res.status(200).json(settings);
   } catch (error) {
     res.status(500).json({ message: 'Server error while fetching platform settings.' });
   }
 };
 
-// ✅ Platform Settings: Update
 export const updatePlatformSettings = async (req, res) => {
   try {
     let updateFields = {};
@@ -278,23 +295,25 @@ export const updatePlatformSettings = async (req, res) => {
     }
 
     if (req.files && req.files.qrCode) {
-      const uploadQR = await new Promise((resolve, reject) => {
-        cloudinary.v2.uploader.upload_stream({ resource_type: 'image' }, (error, result) => {
-          if (error) reject(error);
-          else resolve(result.url);
+      const uploadedQR = await new Promise((resolve, reject) => {
+        cloudinary.v2.uploader.upload_stream({ resource_type: 'image' }, (err, result) => {
+          if (err) return reject(err);
+          resolve(result.url);
         }).end(req.files.qrCode[0].buffer);
       });
-      if (uploadQR) updateFields.qrCodeUrl = uploadQR;
+
+      updateFields.qrCodeUrl = uploadedQR;
     }
 
     if (req.files && req.files.bannerImage) {
-      const uploadBanner = await new Promise((resolve, reject) => {
-        cloudinary.v2.uploader.upload_stream({ resource_type: 'image' }, (error, result) => {
-          if (error) reject(error);
-          else resolve(result.url);
+      const uploadedBanner = await new Promise((resolve, reject) => {
+        cloudinary.v2.uploader.upload_stream({ resource_type: 'image' }, (err, result) => {
+          if (err) return reject(err);
+          resolve(result.url);
         }).end(req.files.bannerImage[0].buffer);
       });
-      if (uploadBanner) updateFields.bannerImageUrl = uploadBanner;
+
+      updateFields.bannerImageUrl = uploadedBanner;
     }
 
     const settings = await PlatformSettings.findOneAndUpdate(
@@ -305,6 +324,6 @@ export const updatePlatformSettings = async (req, res) => {
 
     res.status(200).json({ message: 'Platform settings updated.', settings });
   } catch (error) {
-    res.status(500).json({ message: 'Error updating platform settings.' });
+    res.status(500).json({ message: 'Error while updating platform settings.' });
   }
 };
