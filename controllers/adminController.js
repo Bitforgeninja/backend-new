@@ -256,7 +256,7 @@ export const declareResult = async (req, res) => {
   }
 };
 
-// ✅ RESET market result (needed in adminRoutes.js)
+// ✅ RESET market result
 export const resetMarketResult = async (req, res) => {
   const { marketId } = req.body;
 
@@ -392,5 +392,26 @@ export const updatePlatformSettings = async (req, res) => {
     res.status(200).json({ message: 'Settings updated', settings });
   } catch (error) {
     res.status(500).json({ message: 'Error updating settings' });
+  }
+};
+
+// ✅ 📢 New: Get all declared results for chart page
+export const getAllMarketResults = async (req, res) => {
+  try {
+    const markets = await Market.find({
+      'results.openNumber': { $ne: 'xxx' },
+      'results.closeNumber': { $ne: 'xxx' }
+    });
+
+    const formatted = markets.map((market) => ({
+      marketName: market.name,
+      date: new Date(market.updatedAt).toISOString().slice(0, 10),
+      openNumber: market.results.openNumber,
+      closeNumber: market.results.closeNumber
+    }));
+
+    return res.status(200).json(formatted);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching market results', error });
   }
 };
