@@ -213,7 +213,6 @@ export const updatePlatformSettings = async (req, res) => {
   }
 };
 
-// ✅ Add user — used in /users/add
 export const addUser = async (req, res) => {
   const { name, email, password } = req.body;
 
@@ -243,7 +242,7 @@ export const addUser = async (req, res) => {
   }
 };
 
-// ✅ NEW: Delete bet — fixes the Render deploy error
+// ✅ NEW: Delete Bet
 export const deleteBet = async (req, res) => {
   const { id } = req.params;
 
@@ -258,5 +257,23 @@ export const deleteBet = async (req, res) => {
   } catch (error) {
     console.error('❌ Error deleting bet:', error.message);
     res.status(500).json({ message: 'Server error while deleting bet.' });
+  }
+};
+
+// ✅ NEW: Delete Market
+export const deleteMarket = async (req, res) => {
+  const { marketId } = req.params;
+
+  try {
+    const deletedMarket = await Market.findOneAndDelete({ marketId });
+
+    if (!deletedMarket) {
+      return res.status(404).json({ message: 'Market not found.' });
+    }
+
+    res.status(200).json({ message: 'Market deleted successfully.', market: deletedMarket });
+  } catch (error) {
+    console.error('❌ Error deleting market:', error.message);
+    res.status(500).json({ message: 'Server error while deleting market.' });
   }
 };
