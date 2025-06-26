@@ -6,6 +6,7 @@ import {
   editBet,
   addMarket,
   declareResult,
+  getAllMarketResults, // ✅ IMPORTED HERE
   getAdmins,
   getAllTransactions,
   getAllBets,
@@ -18,7 +19,7 @@ import {
   getPlatformSettings,
   addUser,
   publishOpenResults,
-  resetMarketResult,
+  resetMarketResult
 } from '../controllers/adminController.js';
 
 import adminAuth from '../middleware/adminAuth.js';
@@ -56,6 +57,9 @@ router.post('/markets/declare-results', adminAuth, declareResult);
 router.post('/markets/publish-open', adminAuth, publishOpenResults);
 router.post('/markets/reset-result', adminAuth, resetMarketResult);
 router.delete('/markets/:marketId', adminAuth, deleteMarket);
+
+// ✅ 📢 NEW - GET ALL DECLARED RESULTS FOR CHART
+router.get('/markets/results', adminAuth, getAllMarketResults);
 
 // ✅ Transaction Management
 router.get('/transactions', adminAuth, getAllTransactions);
