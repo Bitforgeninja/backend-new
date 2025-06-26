@@ -49,7 +49,6 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-
 // ✅⏰ Market open/close time check (India Standard Time - IST)
 function getISTHour() {
   const now = new Date();
@@ -63,25 +62,33 @@ function isMarketOpen() {
   return hour >= 7 && hour < 24; // Market open from 7 AM to 11:59 PM IST
 }
 
-// ✅ ✅ ✅ Only block the /api/markets route if market is closed
+// 🔧 TEMP FIX: Disable market check during testing
+// This will allow `/api/markets` 24x7 so frontend doesn't break
+
+// ⛔ Original logic (commented out)
+// app.use("/api/markets", (req, res, next) => {
+//   if (!isMarketOpen()) {
+//     return res.status(403).json({
+//       message: "⏰ Market is closed. Please come back after 7:00 AM.",
+//     });
+//   }
+//   next();
+// });
+
+// ✅ Temporary pass-through (NO BLOCKING)
 app.use("/api/markets", (req, res, next) => {
-  if (!isMarketOpen()) {
-    return res.status(403).json({
-      message: "⏰ Market is closed. Please come back after 7:00 AM.",
-    });
-  }
   next();
 });
 
 // 🌐 Mount API routes
-app.use("/api/auth", authRoutes);           // Auth routes
-app.use("/api/markets", marketRoutes);      // Market routes
-app.use("/api/wallet", walletRoutes);       // Wallet routes
-app.use("/api/bets", betRoutes);            // Bets routes
-app.use("/api/wins", winRoutes);            // Wins routes
-app.use("/api/admin", adminAuthRoutes);     // Admin login
-app.use("/api/admin", adminRoutes);         // Admin actions
-app.use("/api/users", userRoutes);          // User management
+app.use("/api/auth", authRoutes);
+app.use("/api/markets", marketRoutes);
+app.use("/api/wallet", walletRoutes);
+app.use("/api/bets", betRoutes);
+app.use("/api/wins", winRoutes);
+app.use("/api/admin", adminAuthRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/users", userRoutes);
 
 // 🧪 Test route
 app.get("/", (req, res) => {
@@ -100,8 +107,8 @@ app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 
-// ⏲ Start cron job for market scheduling
+// ⏱ Start cron job for market updates
 scheduleMarketTasks();
 
-// 🔄 Export for Vercel or serverless deployment
+// 🔄 Export for serverless if used
 export default app;
