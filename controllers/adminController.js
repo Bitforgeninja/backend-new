@@ -25,6 +25,7 @@ export const upload = multer({ storage }).fields([
   { name: 'bannerImage', maxCount: 1 },
 ]);
 
+// ✅ 1. Get Users
 export const getUsers = async (req, res) => {
   try {
     const users = await User.find().select('-password');
@@ -34,6 +35,55 @@ export const getUsers = async (req, res) => {
   }
 };
 
+// ✅ 2. Add User
+export const addUser = async (req, res) => {
+  const { name, email, password } = req.body;
+
+  if (!name || !email || !password) {
+    return res.status(400).json({ message: 'Name, email, and password are required.' });
+  }
+
+  try {
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: 'User with this email already exists.' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = new User({
+      name,
+      email,
+      password: hashedPassword,
+    });
+
+    await user.save();
+
+    res.status(201).json({ message: 'User added successfully.', user });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error while adding user.' });
+  }
+};
+
+// ✅ 3. Delete User
+export const deleteUser = async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const deletedUser = await User.findByIdAndDelete(userId);
+
+    if (!deletedUser) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    res.status(200).json({ message: 'User deleted successfully.', user: deletedUser });
+  } catch (error) {
+    console.error('❌ Error deleting user:', error.message);
+    res.status(500).json({ message: 'Server error while deleting user.' });
+  }
+};
+
+// ✅ 4. Add Market
 export const addMarket = async (req, res) => {
   const { name, openTime, closeTime, isBettingOpen } = req.body;
 
@@ -63,6 +113,7 @@ export const addMarket = async (req, res) => {
   }
 };
 
+// ✅ 5. Declare Result
 export const declareResult = async (req, res) => {
   const { marketId, openResult, closeResult } = req.body;
 
@@ -114,6 +165,7 @@ export const declareResult = async (req, res) => {
   }
 };
 
+// ✅ 6. Reset Market Result
 export const resetMarketResult = async (req, res) => {
   const { marketId } = req.body;
 
@@ -149,6 +201,43 @@ export const resetMarketResult = async (req, res) => {
   }
 };
 
+// ✅ 7. Delete Bet
+export const deleteBet = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const deletedBet = await Bet.findByIdAndDelete(id);
+
+    if (!deletedBet) {
+      return res.status(404).json({ message: 'Bet not found.' });
+    }
+
+    res.status(200).json({ message: 'Bet deleted successfully.' });
+  } catch (error) {
+    console.error('❌ Error deleting bet:', error.message);
+    res.status(500).json({ message: 'Server error while deleting bet.' });
+  }
+};
+
+// ✅ 8. Delete Market
+export const deleteMarket = async (req, res) => {
+  const { marketId } = req.params;
+
+  try {
+    const deletedMarket = await Market.findOneAndDelete({ marketId });
+
+    if (!deletedMarket) {
+      return res.status(404).json({ message: 'Market not found.' });
+    }
+
+    res.status(200).json({ message: 'Market deleted successfully.', market: deletedMarket });
+  } catch (error) {
+    console.error('❌ Error deleting market:', error.message);
+    res.status(500).json({ message: 'Server error while deleting market.' });
+  }
+};
+
+// ✅ 9. Get Platform Settings
 export const getPlatformSettings = async (req, res) => {
   try {
     const settings = await PlatformSettings.findOne();
@@ -161,6 +250,7 @@ export const getPlatformSettings = async (req, res) => {
   }
 };
 
+// ✅ 10. Update Platform Settings
 export const updatePlatformSettings = async (req, res) => {
   try {
     let updateFields = {};
@@ -210,70 +300,5 @@ export const updatePlatformSettings = async (req, res) => {
     res.status(200).json({ message: 'Platform settings updated.', settings });
   } catch (error) {
     res.status(500).json({ message: 'Error while updating platform settings.' });
-  }
-};
-
-export const addUser = async (req, res) => {
-  const { name, email, password } = req.body;
-
-  if (!name || !email || !password) {
-    return res.status(400).json({ message: 'Name, email, and password are required.' });
-  }
-
-  try {
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ message: 'User with this email already exists.' });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const user = new User({
-      name,
-      email,
-      password: hashedPassword,
-    });
-
-    await user.save();
-
-    res.status(201).json({ message: 'User added successfully.', user });
-  } catch (error) {
-    res.status(500).json({ message: 'Server error while adding user.' });
-  }
-};
-
-// ✅ NEW: Delete Bet
-export const deleteBet = async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    const deletedBet = await Bet.findByIdAndDelete(id);
-
-    if (!deletedBet) {
-      return res.status(404).json({ message: 'Bet not found.' });
-    }
-
-    res.status(200).json({ message: 'Bet deleted successfully.' });
-  } catch (error) {
-    console.error('❌ Error deleting bet:', error.message);
-    res.status(500).json({ message: 'Server error while deleting bet.' });
-  }
-};
-
-// ✅ NEW: Delete Market
-export const deleteMarket = async (req, res) => {
-  const { marketId } = req.params;
-
-  try {
-    const deletedMarket = await Market.findOneAndDelete({ marketId });
-
-    if (!deletedMarket) {
-      return res.status(404).json({ message: 'Market not found.' });
-    }
-
-    res.status(200).json({ message: 'Market deleted successfully.', market: deletedMarket });
-  } catch (error) {
-    console.error('❌ Error deleting market:', error.message);
-    res.status(500).json({ message: 'Server error while deleting market.' });
   }
 };
