@@ -1,5 +1,6 @@
 import express from 'express';
 import multer from 'multer';
+
 import {
   getUsers,
   editBet,
@@ -17,7 +18,8 @@ import {
   updatePlatformSettings,
   getPlatformSettings,
   addUser,
-  publishOpenResults
+  publishOpenResults,
+  resetMarketResult
 } from '../controllers/adminController.js';
 
 import adminAuth from '../middleware/adminAuth.js';
@@ -26,41 +28,44 @@ import { updateMarketStatus } from '../controllers/marketController.js';
 
 const router = express.Router();
 
-// ✅ Multer upload: Handles QR and banner image in memory
+// ✅ Multer config for handling file uploads in memory
 const storage = multer.memoryStorage();
 const upload = multer({ storage }).fields([
-  { name: 'qr', maxCount: 1 },
-  { name: 'banner', maxCount: 1 }
+  { name: 'qrCode', maxCount: 1 },
+  { name: 'bannerImage', maxCount: 1 }
 ]);
 
-// ✅ Platform Settings Routes
+// ✅ Platform Settings
 router.get('/platform-settings', getPlatformSettings);
 router.put('/platform-settings', adminAuth, upload, updatePlatformSettings);
 
-// ✅ User management
+// ✅ User Management
 router.get('/users', adminAuth, getUsers);
+router.post('/users/add', adminAuth, addUser);
 router.put('/users/:id', adminAuth, updateUserDetails);
-router.put('/bets/:id', adminAuth, editBet);
-router.post("/users/add", adminAuth, addUser);
 router.delete('/users/:userId', adminAuth, deleteUser);
 
-// ✅ Market management
+// ✅ Bet Management
+router.get('/bets', adminAuth, getAllBets);
+router.put('/bets/:id', adminAuth, editBet);
+router.delete('/bets/:id', adminAuth, deleteBet);
+
+// ✅ Market Management
 router.post('/add-market', adminAuth, addMarket);
 router.put('/markets/:marketId', adminAuth, updateMarketStatus);
 router.post('/markets/declare-results', adminAuth, declareResult);
-router.delete('/markets/:marketId', adminAuth, deleteMarket);
 router.post('/markets/publish-open', adminAuth, publishOpenResults);
+router.post('/markets/reset-result', adminAuth, resetMarketResult);
+router.delete('/markets/:marketId', adminAuth, deleteMarket);
 
-// ✅ Transactions and Bets
+// ✅ Transaction Management
 router.get('/transactions', adminAuth, getAllTransactions);
-router.get('/bets', adminAuth, getAllBets);
-router.delete('/bets/:id', adminAuth, deleteBet);
 
-// ✅ Winning Ratios
+// ✅ Winning Ratio Settings
 router.get('/winning-ratios', getAllWinningRatios);
 router.put('/winning-ratios/:id', adminAuth, updateWinningRatio);
 
-// ✅ Admins list
+// ✅ Admins
 router.get('/admins', getAdmins);
 
 export default router;
