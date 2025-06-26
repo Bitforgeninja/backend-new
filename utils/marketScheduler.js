@@ -13,7 +13,7 @@ dayjs.extend(timezone);
 export function scheduleMarketTasks() {
   console.log('🕐 Initializing market betting scheduler...');
 
-  // 📍 Runs every minute to check market status like open/close
+  // ✅ Market open/close task – runs every minute
   cron.schedule('* * * * *', async () => {
     try {
       const now = dayjs();
@@ -31,41 +31,40 @@ export function scheduleMarketTasks() {
 
         console.log(`\n📍 Market: ${market.name}`);
         console.log(`   🔓 Starts At: 00:00 AM`);
-        console.log(`   🕛 Open Time: ${market.openTime} → Close Open Betting At: ${openDeadline.format('hh:mm A')}`);
-        console.log(`   🕖 Close Time: ${market.closeTime} → Close Market At: ${closeDeadline.format('hh:mm A')}`);
-        console.log(`   ⏱ Current Time: ${nowIST.format('hh:mm A')}`);
-        console.log(`   🔐 isBettingOpen: ${market.isBettingOpen} | 🟢 openBetting: ${market.openBetting}`);
+        console.log(`   🕛 Open Time: ${market.openTime} → Stop open at: ${openDeadline.format('hh:mm A')}`);
+        console.log(`   🕖 Close Time: ${market.closeTime} → Stop full at: ${closeDeadline.format('hh:mm A')}`);
+        console.log(`   ⏱ Now: ${nowIST.format('hh:mm A')}  | 🟢 isOpen: ${market.isBettingOpen}, 🔓 openBetting: ${market.openBetting}`);
 
         const updates = {};
 
-        // ✅ Auto-reset: Reopen markets between 12:00 AM and 2:00 AM IST
+        // 🔁 Auto-reset open markets between 12:00 AM and 2:00 AM IST
         const hour = nowIST.hour();
         if (hour >= 0 && hour < 2) {
           if (!market.isBettingOpen || !market.openBetting) {
             updates.isBettingOpen = true;
             updates.openBetting = true;
-            console.log(`   🌙 Auto-reset: Reopening betting window (00:00–02:00 IST)`);
+            console.log("   🌙 Auto-reset: Re-opening betting for new day");
           }
         }
 
-        // ✅ Close open betting (10 minutes before open time)
+        // ❌ Close open bets 10 mins before open time
         if (nowIST.isAfter(openDeadline) && market.openBetting) {
           updates.openBetting = false;
-          console.log(`   🚫 Closing open betting`);
+          console.log("   ⛔ Closing open betting (10 mins before open)");
         }
 
-        // ✅ Close full market (10 minutes before close time)
+        // ❌ Close full betting 10 mins before close time
         if (nowIST.isAfter(closeDeadline) && market.isBettingOpen) {
           updates.isBettingOpen = false;
-          console.log(`   ❌ Closing full market betting`);
+          console.log("   ❌ Closing full market");
         }
 
-        // ✅ Save updates if any
+        // Apply updates if any
         if (Object.keys(updates).length > 0) {
           await Market.findByIdAndUpdate(market._id, { $set: updates });
-          console.log(`   🔄 Updated market flags:`, updates);
+          console.log("   🔄 Updated flags:", updates);
         } else {
-          console.log(`   ✅ No updates needed`);
+          console.log("   ✅ No update needed.");
         }
       }
 
@@ -74,20 +73,37 @@ export function scheduleMarketTasks() {
     }
   });
 
-  console.log('✅ Market scheduler running every minute...');
+  console.log('✅ Betting open/close task running every minute...');
 
-  // 🔄 RESULT RESET TASK – runs every night at 12:00 AM IST to reset results
-  cron.schedule('30 18 * * *', async () => {
+  // ✅ DAILY RESULT RESET – Runs every day at 12:00 AM IST to clear results
+  cron.schedule('0 0 * * *', async () => {
     const nowIST = dayjs().tz('Asia/Kolkata');
-    console.log(`\n🕛 [${nowIST.format('YYYY-MM-DD HH:mm:ss')} IST] Running daily result reset...`);
+    console.log(`\n🕛 [${nowIST.format('YYYY-MM-DD HH:mm:ss')} IST] Resetting all market results...`);
 
     try {
-      await Market.updateMany({}, { $set: { result: "xxx-xx-xxx" } });
-      console.log('✅ All market results reset to default (xxx-xx-xxx)');
+      await Market.updateMany({}, {
+        $set: {
+          results: {
+            openNumber: 'xxx',
+            closeNumber: 'xxx',
+            openSingleDigit: 'x',
+            closeSingleDigit: 'x',
+            jodiResult: 'xx',
+            openSinglePanna: 'xxx',
+            closeSinglePanna: 'xxx',
+          },
+          isBettingOpen: false,
+          openBetting: false
+        }
+      });
+
+      console.log('✅ All market results reset to default');
     } catch (error) {
-      console.error('❌ Error resetting market results:', error);
+      console.error('❌ Failed to reset results:', error);
     }
+  }, {
+    timezone: 'Asia/Kolkata'
   });
 
-  console.log('✅ Result reset scheduler running every night at 12:00 AM IST...');
+  console.log('✅ Result reset task scheduled at 12:00 AM IST daily✔');
 }
