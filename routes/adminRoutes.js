@@ -9,7 +9,6 @@ import {
   getAdmins,
   getAllTransactions,
   getAllBets,
-  editMarket,
   deleteMarket,
   deleteBet,
   deleteUser,
@@ -19,7 +18,7 @@ import {
   getPlatformSettings,
   addUser,
   publishOpenResults,
-  resetMarketResult
+  resetMarketResult,
 } from '../controllers/adminController.js';
 
 import adminAuth from '../middleware/adminAuth.js';
@@ -28,7 +27,7 @@ import { updateMarketStatus } from '../controllers/marketController.js';
 
 const router = express.Router();
 
-// ✅ Multer config for handling file uploads in memory
+// ✅ Configure Multer for in-memory handling of QR and banner image uploads
 const storage = multer.memoryStorage();
 const upload = multer({ storage }).fields([
   { name: 'qrCode', maxCount: 1 },
@@ -61,11 +60,11 @@ router.delete('/markets/:marketId', adminAuth, deleteMarket);
 // ✅ Transaction Management
 router.get('/transactions', adminAuth, getAllTransactions);
 
-// ✅ Winning Ratio Settings
+// ✅ Winning Ratios
 router.get('/winning-ratios', getAllWinningRatios);
 router.put('/winning-ratios/:id', adminAuth, updateWinningRatio);
 
-// ✅ Admins
-router.get('/admins', getAdmins);
+// ✅ Admins List
+router.get('/admins', adminAuth, getAdmins);
 
 export default router;
