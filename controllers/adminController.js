@@ -302,3 +302,20 @@ export const updatePlatformSettings = async (req, res) => {
     res.status(500).json({ message: 'Error while updating platform settings.' });
   }
 };
+export const editBet = async (req, res) => {
+  const { id } = req.params;
+  const updates = req.body;
+
+  try {
+    const updatedBet = await Bet.findByIdAndUpdate(id, updates, { new: true });
+
+    if (!updatedBet) {
+      return res.status(404).json({ message: 'Bet not found.' });
+    }
+
+    res.status(200).json({ message: 'Bet updated successfully.', bet: updatedBet });
+  } catch (error) {
+    console.error('❌ Error updating bet:', error.message);
+    res.status(500).json({ message: 'Server error while updating bet.' });
+  }
+};
