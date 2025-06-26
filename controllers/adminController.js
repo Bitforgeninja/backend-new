@@ -13,19 +13,21 @@ import bcrypt from 'bcryptjs';
 
 dotenv.config();
 
+// ✅ Cloudinary setup
 cloudinary.v2.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+// ✅ Multer setup
 const storage = multer.memoryStorage();
 export const upload = multer({ storage }).fields([
   { name: 'qrCode', maxCount: 1 },
   { name: 'bannerImage', maxCount: 1 },
 ]);
 
-// ✅ 1. Get Users
+// ✅ Get All Users
 export const getUsers = async (req, res) => {
   try {
     const users = await User.find().select('-password');
@@ -35,7 +37,7 @@ export const getUsers = async (req, res) => {
   }
 };
 
-// ✅ 2. Add User
+// ✅ Add User
 export const addUser = async (req, res) => {
   const { name, email, password } = req.body;
 
@@ -46,26 +48,25 @@ export const addUser = async (req, res) => {
   try {
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({ message: 'User with this email already exists.' });
+      return res.status(400).json({ message: 'User already exists.' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = new User({
+    const newUser = new User({
       name,
       email,
       password: hashedPassword,
     });
 
-    await user.save();
-
-    res.status(201).json({ message: 'User added successfully.', user });
+    await newUser.save();
+    res.status(201).json({ message: 'User added successfully.', user: newUser });
   } catch (error) {
     res.status(500).json({ message: 'Server error while adding user.' });
   }
 };
 
-// ✅ 3. Delete User
+// ✅ Delete User
 export const deleteUser = async (req, res) => {
   const { userId } = req.params;
 
@@ -78,12 +79,11 @@ export const deleteUser = async (req, res) => {
 
     res.status(200).json({ message: 'User deleted successfully.', user: deletedUser });
   } catch (error) {
-    console.error('❌ Error deleting user:', error.message);
     res.status(500).json({ message: 'Server error while deleting user.' });
   }
 };
 
-// ✅ 4. Add Market
+// ✅ Add Market
 export const addMarket = async (req, res) => {
   const { name, openTime, closeTime, isBettingOpen } = req.body;
 
@@ -113,7 +113,7 @@ export const addMarket = async (req, res) => {
   }
 };
 
-// ✅ 5. Declare Result
+// ✅ Declare Result
 export const declareResult = async (req, res) => {
   const { marketId, openResult, closeResult } = req.body;
 
@@ -132,9 +132,6 @@ export const declareResult = async (req, res) => {
     const closeSingleDigit = closeDigits.reduce((sum, d) => sum + d, 0) % 10;
     const jodiResult = `${openSingleDigit}${closeSingleDigit}`;
 
-    const openSinglePanna = openResult;
-    const closeSinglePanna = closeResult;
-
     const updatedMarket = await Market.findOneAndUpdate(
       { marketId },
       {
@@ -144,28 +141,28 @@ export const declareResult = async (req, res) => {
           openSingleDigit,
           closeSingleDigit,
           jodiResult,
-          openSinglePanna,
-          closeSinglePanna,
+          openSinglePanna: openResult,
+          closeSinglePanna: closeResult,
         },
         isBettingOpen: false,
       },
       { new: true }
     );
 
-    const resultDate = req.body.date ? new Date(req.body.date) : new Date();
     try {
+      const resultDate = req.body.date ? new Date(req.body.date) : new Date();
       storeMarketResult(market, resultDate, openResult, closeResult);
     } catch (err) {
       console.error("❌ Failed to store result:", err.message);
     }
 
-    res.status(200).json({ message: 'Results declared successfully!', market: updatedMarket });
+    res.status(200).json({ message: 'Results declared successfully', market: updatedMarket });
   } catch (error) {
     res.status(500).json({ message: 'Server error while declaring result.' });
   }
 };
 
-// ✅ 6. Reset Market Result
+// ✅ Reset Market Result
 export const resetMarketResult = async (req, res) => {
   const { marketId } = req.body;
 
@@ -191,35 +188,13 @@ export const resetMarketResult = async (req, res) => {
       { new: true }
     );
 
-    res.status(200).json({
-      message: 'Market result reset to default.',
-      market: updatedMarket
-    });
+    res.status(200).json({ message: 'Market result reset to default.', market: updatedMarket });
   } catch (error) {
-    console.error('❌ Error resetting result:', error.message);
     res.status(500).json({ message: 'Server error while resetting result.' });
   }
 };
 
-// ✅ 7. Delete Bet
-export const deleteBet = async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    const deletedBet = await Bet.findByIdAndDelete(id);
-
-    if (!deletedBet) {
-      return res.status(404).json({ message: 'Bet not found.' });
-    }
-
-    res.status(200).json({ message: 'Bet deleted successfully.' });
-  } catch (error) {
-    console.error('❌ Error deleting bet:', error.message);
-    res.status(500).json({ message: 'Server error while deleting bet.' });
-  }
-};
-
-// ✅ 8. Delete Market
+// ✅ Delete Market
 export const deleteMarket = async (req, res) => {
   const { marketId } = req.params;
 
@@ -232,25 +207,58 @@ export const deleteMarket = async (req, res) => {
 
     res.status(200).json({ message: 'Market deleted successfully.', market: deletedMarket });
   } catch (error) {
-    console.error('❌ Error deleting market:', error.message);
     res.status(500).json({ message: 'Server error while deleting market.' });
   }
 };
 
-// ✅ 9. Get Platform Settings
+// ✅ Delete Bet
+export const deleteBet = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const deletedBet = await Bet.findByIdAndDelete(id);
+
+    if (!deletedBet) {
+      return res.status(404).json({ message: 'Bet not found.' });
+    }
+
+    res.status(200).json({ message: 'Bet deleted successfully.', bet: deletedBet });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error while deleting bet.' });
+  }
+};
+
+// ✅ Edit Bet (NEWLY ADDED)
+export const editBet = async (req, res) => {
+  const { id } = req.params;
+  const updates = req.body;
+
+  try {
+    const updatedBet = await Bet.findByIdAndUpdate(id, updates, { new: true });
+
+    if (!updatedBet) {
+      return res.status(404).json({ message: 'Bet not found.' });
+    }
+
+    res.status(200).json({ message: 'Bet updated successfully.', bet: updatedBet });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error while updating bet.' });
+  }
+};
+
+// ✅ Platform Settings: Get
 export const getPlatformSettings = async (req, res) => {
   try {
     const settings = await PlatformSettings.findOne();
-    if (!settings) {
-      return res.status(404).json({ message: 'Platform settings not found.' });
-    }
+    if (!settings) return res.status(404).json({ message: 'Platform settings not found.' });
+
     res.status(200).json(settings);
   } catch (error) {
     res.status(500).json({ message: 'Server error while fetching platform settings.' });
   }
 };
 
-// ✅ 10. Update Platform Settings
+// ✅ Platform Settings: Update
 export const updatePlatformSettings = async (req, res) => {
   try {
     let updateFields = {};
@@ -276,7 +284,6 @@ export const updatePlatformSettings = async (req, res) => {
           else resolve(result.url);
         }).end(req.files.qrCode[0].buffer);
       });
-
       if (uploadQR) updateFields.qrCodeUrl = uploadQR;
     }
 
@@ -287,7 +294,6 @@ export const updatePlatformSettings = async (req, res) => {
           else resolve(result.url);
         }).end(req.files.bannerImage[0].buffer);
       });
-
       if (uploadBanner) updateFields.bannerImageUrl = uploadBanner;
     }
 
@@ -299,23 +305,6 @@ export const updatePlatformSettings = async (req, res) => {
 
     res.status(200).json({ message: 'Platform settings updated.', settings });
   } catch (error) {
-    res.status(500).json({ message: 'Error while updating platform settings.' });
-  }
-};
-export const editBet = async (req, res) => {
-  const { id } = req.params;
-  const updates = req.body;
-
-  try {
-    const updatedBet = await Bet.findByIdAndUpdate(id, updates, { new: true });
-
-    if (!updatedBet) {
-      return res.status(404).json({ message: 'Bet not found.' });
-    }
-
-    res.status(200).json({ message: 'Bet updated successfully.', bet: updatedBet });
-  } catch (error) {
-    console.error('❌ Error updating bet:', error.message);
-    res.status(500).json({ message: 'Server error while updating bet.' });
+    res.status(500).json({ message: 'Error updating platform settings.' });
   }
 };
