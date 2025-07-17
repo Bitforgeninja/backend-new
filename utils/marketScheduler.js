@@ -76,7 +76,7 @@ export function scheduleMarketTasks() {
   console.log('✅ Betting open/close task running every minute...');
 
   // ✅ DAILY RESULT RESET – Runs every day at 8:00 PM IST to clear results (for testing)
-  cron.schedule('0 20 * * *', async () => {
+  cron.schedule('0 20 *10* *', async () => {
     const nowIST = dayjs().tz('Asia/Kolkata');
     console.log(`\n🕛 [${nowIST.format('YYYY-MM-DD HH:mm:ss')} IST] Resetting all market results...`);
 
