@@ -75,8 +75,8 @@ export function scheduleMarketTasks() {
 
   console.log('✅ Betting open/close task running every minute...');
 
-  // ✅ DAILY RESULT RESET – Runs every day at 7:50 PM IST to clear results (for testing)
-  cron.schedule('50 19 * * *', async () => {
+  // ✅ DAILY RESULT RESET – Runs every day at 8:00 PM IST to clear results (for testing)
+  cron.schedule('0 20 * * *', async () => {
     const nowIST = dayjs().tz('Asia/Kolkata');
     console.log(`\n🕛 [${nowIST.format('YYYY-MM-DD HH:mm:ss')} IST] Resetting all market results...`);
 
@@ -84,13 +84,13 @@ export function scheduleMarketTasks() {
       await Market.updateMany({}, {
         $set: {
           results: {
-            openNumber: 'xxx',
-            closeNumber: 'xxx',
-            openSingleDigit: 'x',
-            closeSingleDigit: 'x',
-            jodiResult: 'xx',
-            openSinglePanna: 'xxx',
-            closeSinglePanna: 'xxx',
+            openNumber: '000',           // String
+            closeNumber: '000',          // String
+            openSingleDigit: 0,          // Number
+            closeSingleDigit: 0,         // Number
+            jodiResult: 0,               // Number
+            openSinglePanna: '000',      // String
+            closeSinglePanna: '000',     // String
           },
           isBettingOpen: false,
           openBetting: false
@@ -105,5 +105,5 @@ export function scheduleMarketTasks() {
     timezone: 'Asia/Kolkata'
   });
 
-  console.log('✅ Result reset task scheduled at 7:50 PM IST daily✔ (for testing)');
+  console.log('✅ Result reset task scheduled at 8:00 PM IST daily✔ (for testing)');
 }
