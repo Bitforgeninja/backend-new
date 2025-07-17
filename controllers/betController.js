@@ -1,10 +1,14 @@
 import Bet from '../models/betModel.js';
 import User from '../models/userModel.js';
+import Market from '../models/marketModel.js'; // <-- Add this line
 
 // Place a bet
 export const placeBet = async (req, res) => {
   const { marketName, gameName, number, amount, winningRatio, betType } = req.body;
   const userId = req.user;
+
+  // Log the request body for debugging
+  console.log('Placing bet with data:', req.body, 'User:', userId);
 
   // Validate input
   if (!userId || !marketName || !gameName || number == null || !amount || !winningRatio || !betType) {
@@ -58,7 +62,7 @@ export const placeBet = async (req, res) => {
 
     res.status(201).json({ message: 'Bet placed successfully', bet });
   } catch (error) {
-    console.error('Error placing bet:', error.message);
+    console.error('Error placing bet:', error); // Log the full error
     res.status(500).json({ message: 'Server error while placing bet' });
   }
 };
@@ -77,7 +81,7 @@ export const getUserBets = async (req, res) => {
 
     res.status(200).json({ message: 'Bets fetched successfully', bets });
   } catch (error) {
-    console.error('Error fetching bets:', error.message);
+    console.error('Error fetching bets:', error);
     res.status(500).json({ message: 'Server error while fetching bets' });
   }
 };
