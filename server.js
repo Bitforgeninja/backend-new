@@ -80,4 +80,20 @@ app.listen(PORT, () => {
 // Start daily cron job for resets
 scheduleMarketTasks();
 
+// ✅ ONE-TIME FIX: Open all markets for betting on first deploy
+import Market from "./models/marketModel.js";
+(async () => {
+  try {
+    await Market.updateMany({}, {
+      $set: {
+        openBetting: true,
+        isBettingOpen: true
+      }
+    });
+    console.log('✅ All markets set to openBetting: true, isBettingOpen: true');
+  } catch (err) {
+    console.error('❌ Failed to update markets for open betting:', err);
+  }
+})();
+
 export default app;
