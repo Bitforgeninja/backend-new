@@ -55,7 +55,8 @@ router.post('/add-market', adminAuth, addMarket);
 router.put('/markets/:marketId', adminAuth, updateMarketStatus);
 router.post('/markets/declare-results', adminAuth, declareResult);
 router.post('/markets/publish-open', adminAuth, publishOpenResults);
-router.post('/markets/reset-result', adminAuth, resetMarketResult);
+router.post('/markets/reset-result', adminAuth, resetMarketResult); // Existing POST route
+router.put('/reset-result', adminAuth, resetMarketResult); // ✅ NEW: Add this PUT route!
 router.delete('/markets/:marketId', adminAuth, deleteMarket);
 
 // ✅ 📢 NEW - GET ALL DECLARED RESULTS FOR CHART
