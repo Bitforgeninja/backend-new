@@ -395,19 +395,29 @@ export const updatePlatformSettings = async (req, res) => {
   }
 };
 
-// ✅ 📢 New: Get all declared results for chart page
+// ✅ 📢 New: Get all declared results for chart page (for chart auto-update)
 export const getAllMarketResults = async (req, res) => {
   try {
     const markets = await Market.find({
-      'results.openNumber': { $ne: 'xxx' },
-      'results.closeNumber': { $ne: 'xxx' }
+      'results.openNumber': { $nin: ['xxx', '000'] },
+      'results.closeNumber': { $nin: ['xxx', '000'] }
     });
 
+    // Format for chart page
     const formatted = markets.map((market) => ({
-      marketName: market.name,
-      date: new Date(market.updatedAt).toISOString().slice(0, 10),
-      openNumber: market.results.openNumber,
-      closeNumber: market.results.closeNumber
+      market: market.name,
+      date: new Date(market.updatedAt).toLocaleDateString("en-GB"), // "dd-mm-yyyy"
+      left: [
+        market.results.openNumber?.[0] || "-",
+        market.results.openNumber?.[1] || "-",
+        market.results.openNumber?.[2] || "-"
+      ],
+      center: market.results.jodiResult?.toString() || "-",
+      right: [
+        market.results.closeNumber?.[0] || "-",
+        market.results.closeNumber?.[1] || "-",
+        market.results.closeNumber?.[2] || "-"
+      ]
     }));
 
     return res.status(200).json(formatted);
