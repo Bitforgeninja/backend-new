@@ -91,12 +91,13 @@ export function scheduleMarketTasks() {
             jodiResult: 0,               // Number
             openSinglePanna: '000',      // String
             closeSinglePanna: '000',     // String
-          }
-          // Do NOT set isBettingOpen or openBetting here!
+          },
+          openBetting: true,      // <--- Always open betting after reset
+          isBettingOpen: true     // <--- Always open betting after reset
         }
       });
 
-      console.log('✅ All market results reset to default');
+      console.log('✅ All market results reset to default and betting is OPEN');
     } catch (error) {
       console.error('❌ Failed to reset results:', error);
     }
