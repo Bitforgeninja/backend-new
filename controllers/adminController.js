@@ -256,7 +256,7 @@ export const declareResult = async (req, res) => {
   }
 };
 
-// ✅ RESET market result (UPDATED)
+// ✅ RESET market result (UPDATED - does NOT close betting)
 export const resetMarketResult = async (req, res) => {
   const { marketId } = req.body;
 
@@ -273,6 +273,7 @@ export const resetMarketResult = async (req, res) => {
           openSinglePanna: '000',      // String
           closeSinglePanna: '000'      // String
         }
+        // Do NOT set isBettingOpen or openBetting here!
       },
       { new: true }
     );
