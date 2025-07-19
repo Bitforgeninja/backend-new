@@ -256,7 +256,7 @@ export const declareResult = async (req, res) => {
   }
 };
 
-// ✅ RESET market result (UPDATED - does NOT close betting)
+// ✅ RESET market result (PERMANENT SOLUTION: always open betting after reset)
 export const resetMarketResult = async (req, res) => {
   const { marketId } = req.body;
 
@@ -272,8 +272,9 @@ export const resetMarketResult = async (req, res) => {
           jodiResult: 0,               // Number
           openSinglePanna: '000',      // String
           closeSinglePanna: '000'      // String
-        }
-        // Do NOT set isBettingOpen or openBetting here!
+        },
+        openBetting: true,      // <--- Always open betting after reset
+        isBettingOpen: true     // <--- Always open betting after reset
       },
       { new: true }
     );
