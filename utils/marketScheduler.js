@@ -91,9 +91,8 @@ export function scheduleMarketTasks() {
             jodiResult: 0,               // Number
             openSinglePanna: '000',      // String
             closeSinglePanna: '000',     // String
-          },
-          isBettingOpen: false,
-          openBetting: false
+          }
+          // Do NOT set isBettingOpen or openBetting here!
         }
       });
 
