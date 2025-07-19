@@ -256,7 +256,7 @@ export const declareResult = async (req, res) => {
   }
 };
 
-// ✅ RESET market result
+// ✅ RESET market result (UPDATED)
 export const resetMarketResult = async (req, res) => {
   const { marketId } = req.body;
 
@@ -265,13 +265,13 @@ export const resetMarketResult = async (req, res) => {
       { marketId },
       {
         results: {
-          openNumber: 'xxx',
-          closeNumber: 'xxx',
-          openSingleDigit: 'x',
-          closeSingleDigit: 'x',
-          jodiResult: 'xx',
-          openSinglePanna: 'xxx',
-          closeSinglePanna: 'xxx'
+          openNumber: '000',           // String
+          closeNumber: '000',          // String
+          openSingleDigit: 0,          // Number
+          closeSingleDigit: 0,         // Number
+          jodiResult: 0,               // Number
+          openSinglePanna: '000',      // String
+          closeSinglePanna: '000'      // String
         }
       },
       { new: true }
