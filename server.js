@@ -48,7 +48,7 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-// ✅ DIRECTLY expose market routes 24×7 — NO time restriction
+// ✅ Market routes (public)
 app.use("/api/markets", marketRoutes);
 
 // ✅ All other API routes
@@ -56,8 +56,8 @@ app.use("/api/auth", authRoutes);
 app.use("/api/wallet", walletRoutes);
 app.use("/api/bets", betRoutes);
 app.use("/api/wins", winRoutes);
-app.use("/api/admin", adminAuthRoutes);
-app.use("/api/admin", adminRoutes);
+app.use("/api/admin", adminAuthRoutes); // Admin login/auth
+app.use("/api/admin", adminRoutes);     // Admin panel actions
 app.use("/api/users", userRoutes);
 
 // ✅ Health check
